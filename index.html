@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Notification History Usage</title>
+<style>
+:root{
+  --bg:#f6f8fa; --card:#ffffff; --ink:#1b2330; --muted:#5d6b7e; --line:#e3e8ef;
+  --accent:#0e8fb3; --accent-soft:#d6f0f7; --accent2:#7a5af5; --warn:#b26a00; --warn-soft:#fff4e0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f141b; --card:#171e27; --ink:#e6edf5; --muted:#93a1b3; --line:#283240;
+    --accent:#3cc3e6; --accent-soft:#16384a; --accent2:#a48cff; --warn:#f0b24a; --warn-soft:#3a2c12;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --card:#171e27; --ink:#e6edf5; --muted:#93a1b3; --line:#283240;
+  --accent:#3cc3e6; --accent-soft:#16384a; --accent2:#a48cff; --warn:#f0b24a; --warn-soft:#3a2c12;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:28px 16px 64px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--card)}
+.lang button{border:0;background:none;color:var(--muted);padding:6px 14px;font:inherit;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.verdict{margin:22px 0;padding:18px 20px;border-radius:14px;background:var(--accent-soft);border-left:4px solid var(--accent);font-size:17px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 8px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi b{display:block;font-size:28px;line-height:1.15;color:var(--accent);font-variant-numeric:tabular-nums}
+.kpi span{color:var(--muted);font-size:13px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:16px}
+h2{font-size:18px;margin:0 0 4px}
+h3{font-size:15px;margin:22px 0 4px;color:var(--accent)}
+section h3:first-of-type{margin-top:14px}
+.note{color:var(--muted);font-size:13px;margin:0 0 12px}
+svg{display:block;width:100%;height:auto}
+svg text{fill:var(--muted);font-size:11px;font-family:inherit}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid2 section{margin-top:0}
+ul.facts{margin:0;padding-left:18px}
+ul.facts li{margin:6px 0}
+.gap{background:var(--warn-soft);border-left:4px solid var(--warn)}
+.gap h2{color:var(--warn)}
+.legend{display:flex;gap:16px;color:var(--muted);font-size:13px;margin-bottom:6px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+footer{color:var(--muted);font-size:12px;margin-top:24px}
+[data-l="ja"]{display:none}
+html[lang="ja"] [data-l="en"]{display:none}
+html[lang="ja"] [data-l="ja"]{display:revert}
+@media (max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.kpi b{font-size:24px}}
+</style>
+</head>
+<body>
+<style>
+.pending{color:var(--muted);font-style:italic;padding:18px 0;text-align:center}
+.kpi b.none{color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:13px}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+th.n{white-space:nowrap}
+/* On a phone the appendix tables are wider than the card; scroll them instead of the page. */
+#perItem,#byTag,#appPush,#appEmail{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1><span data-l="en">Notification history usage report</span><span data-l="ja">「通知履歴」機能 利用状況レポート</span></h1>
+    <p class="sub"><span data-l="en">Search Array · production · as of 2026-10-23</span><span data-l="ja">サーチアレイ・本番環境・2026-10-23 時点</span></p>
+  </div>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" data-set="en" aria-pressed="true">EN</button>
+    <button type="button" data-set="ja" aria-pressed="false">日本語</button>
+  </div>
+</header>
+
+<div class="verdict">
+  <span data-l="en"><b>There is no usage logging for the notification bell.</b> Nothing is recorded when a user opens the notification panel, so open counts and open rates cannot be produced for any period, past or present. What <i>is</i> recorded — in the database, not in logs — is one row per user per notification at the moment they open it. That gives us click counts, click rates, usage over time and usage by notification type, for the whole life of the feature.</span>
+  <span data-l="ja"><b>通知ベルには利用ログが実装されていません。</b>ユーザーが通知一覧を開いても記録は一切残らないため、開封数・開封率は過去分を含め取得できません。一方で<i>データベース側</i>には、ユーザーが個別の通知を開いた時点で既読レコードが1件ずつ記録されています。これによりクリック数・クリック率・期間別および通知の種類別の利用状況を、機能リリース時点まで遡って集計できます。</span>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><b data-k="opens">—</b><span data-l="en">notifications opened (unique users)</span><span data-l="ja">通知を開いた件数（ユニーク）</span></div>
+  <div class="kpi"><b data-k="users">—</b><span data-l="en">users who opened any notification</span><span data-l="ja">通知を開いたユーザー数</span></div>
+  <div class="kpi"><b data-k="rate">—</b><span data-l="en">of the eligible audience, per notification</span><span data-l="ja">対象ユーザーに占める開封率（通知あたり）</span></div>
+  <div class="kpi"><b data-k="published">—</b><span data-l="en">notifications published</span><span data-l="ja">公開された通知の数</span></div>
+</div>
+
+<section>
+  <h2><span data-l="en">What was measured</span><span data-l="ja">計測対象</span></h2>
+  <ul class="facts" data-l="en">
+    <li><b>Opening a notification (click).</b> The user taps an item in the list and its detail opens. This writes a read receipt, and it is the one user action the system records.</li>
+    <li><b>Eligible audience.</b> The users who could have seen a given notification <b>as new</b> — those who registered <b>before</b> it was published. A notification published before a user joined is shown to them already-read and never counts toward their bell badge, so they are excluded from the denominator of every rate. They are not prevented from opening it: the item is still in their list, and <span data-fill="lsReceipts">347</span> of the opens below (<span data-fill="lsPct">3.9%</span>, by <span data-fill="lsUsers">285</span> users) are exactly that. Those opens count as usage but are excluded from the numerator, so the numerator stays a subset of the denominator.</li>
+    <li><b>Counting.</b> A receipt is written only on the <b>first</b> open and is never updated. Every figure here is <b>unique users, not views</b>; re-reads are invisible.</li>
+    <li><b>Measurement window.</b> The feature is gated by a build-time flag, so the period covered is not the code's merge date (mid-July 2026) but the period the flag was live in a production build. That period is taken from the data itself — the earliest read receipt and the earliest published notification — not from a configuration file.</li>
+  </ul>
+  <ul class="facts" data-l="ja">
+    <li><b>通知を開く（クリック）。</b>一覧の項目をタップして詳細を開く操作です。このとき既読レコードが書き込まれ、これがシステムの記録している唯一のユーザー操作です。</li>
+    <li><b>対象ユーザー。</b>その通知を<b>未読として</b>見られる状態だったユーザー、すなわち公開<b>前</b>に登録していたユーザーです。登録前に公開された通知は既読扱いで表示され、ベルの未読件数にも加算されないため、利用率の分母から除外しています。ただし非表示ではなく、一覧から開くことは可能です。実際、以下の開封のうち <span data-fill="lsReceipts">347</span> 件（<span data-fill="lsPct">3.9%</span>・<span data-fill="lsUsers">285</span>名）がこれに該当します。これらは利用回数には含めますが、分子が分母の部分集合であるよう、利用率の分子からは除外しています。</li>
+    <li><b>集計方法。</b>既読レコードは<b>初回</b>のみ記録され更新されません。したがって各数値は<b>ユニークユーザー数であり閲覧回数ではありません</b>。再読は記録されません。</li>
+    <li><b>集計期間。</b>本機能はビルド時に決まるフラグで制御されているため、対象期間はコードのマージ時期（2026年7月中旬）ではなく、本番ビルドでフラグが有効になっていた期間です。この期間は設定ファイルの値ではなく、最も古い既読レコードと最も古い通知の公開日からデータ側で確認しています。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span data-l="en">Opens per notification</span><span data-l="ja">通知ごとの開封数</span></h2>
+  <p class="note"><span data-l="en">Unique users who opened each published notification. The rate divides the <b>By eligible</b> column by <b>Eligible</b> — users who registered after a notification was published still see it (shown already-read) and can still open it, but they are not part of its eligible audience.</span><span data-l="ja">公開された各通知を開いたユニークユーザー数です。開封率は<b>「うち対象者」</b>を<b>「対象者」</b>で割って算出しています。通知の公開後に登録したユーザーは、その通知を既読扱いで閲覧・開封できますが、対象ユーザーには含まれません。</span></p>
+  <div id="perItem"></div>
+</section>
+
+<section>
+  <h2><span data-l="en">Usage over time</span><span data-l="ja">期間別の利用状況</span></h2>
+  <p class="note"><span data-l="en">Notifications opened per week.</span><span data-l="ja">週ごとの通知開封数です。</span></p>
+  <div id="weekly"></div>
+</section>
+
+<div class="grid2" style="margin-top:16px">
+  <section>
+    <h2><span data-l="en">Time of day (JST)</span><span data-l="ja">時間帯別（JST）</span></h2>
+    <div id="hours"></div>
+  </section>
+  <section>
+    <h2><span data-l="en">Day of week</span><span data-l="ja">曜日別</span></h2>
+    <div id="weekday"></div>
+  </section>
+</div>
+
+<section>
+  <h2><span data-l="en">Usage by notification type</span><span data-l="ja">通知の種類別の利用状況</span></h2>
+  <p class="note"><span data-l="en">Types come from the tags set by the admin. A notification can carry several tags, so these rows overlap and must not be summed.</span><span data-l="ja">種類は管理画面で設定されたタグにもとづきます。1つの通知に複数のタグが付く場合があるため、各行は重複しており合計はできません。</span></p>
+  <div id="byTag"></div>
+</section>
+
+<section class="gap">
+  <h2><span data-l="en">Appendix — the other two notification channels</span><span data-l="ja">付録：その他2つの通知チャネル</span></h2>
+  <p class="note"><span data-l="en"><b>These are separate features from the bell</b>, with their own records. Do not read these figures as bell usage. They are here because they are the only places in the product where the open-rate question has an answer.</span><span data-l="ja"><b>いずれもベルアイコンとは別機能</b>であり、記録の仕組みも異なります。以下をベルの利用状況として読まないようご注意ください。「開封率」に数値で答えられるのはこの2つだけであるため、参考として記載します。</span></p>
+
+  <h3><span data-l="en">A. Browser push notifications (FCM)</span><span data-l="ja">A. ブラウザのプッシュ通知（FCM）</span></h3>
+  <p class="note"><span data-l="en"><b>Delivered means accepted by FCM, not opened.</b> Per-device results are not stored, and push clicks exist only as anonymous log lines with ~14-day retention, so no open or click rate can be computed for push.</span><span data-l="ja"><b>「配信成功」はFCMが受け付けた件数であり、開封された件数ではありません。</b>端末ごとの結果は保存されておらず、プッシュのクリックはユーザーIDを含まないログ（保持期間約14日）にしか残らないため、プッシュの開封率・クリック率は算出できません。</span></p>
+  <div id="appPush"></div>
+
+  <h3><span data-l="en">B. Game notification email</span><span data-l="ja">B. ゲーム通知メール</span></h3>
+  <p class="note"><span data-l="en"><b>This is the one true open rate in the product.</b> Opens are measured by a tracking pixel in the email and recorded once, on the first open. Mail clients that block images are not counted, so every rate here is a lower bound.</span><span data-l="ja"><b>製品内で唯一、本当の意味での開封率を計測しているのがこのチャネルです。</b>開封はメール内のトラッキング画像で計測し、初回のみ記録されます。画像を読み込まないメールソフトでは計測されないため、開封率は下限値です。</span></p>
+  <div id="appEmail"></div>
+</section>
+
+<section class="gap">
+  <h2><span data-l="en">Data that could not be collected</span><span data-l="ja">ログから取得できなかったデータ</span></h2>
+  <p class="note"><span data-l="en">This is the substance of the investigation, and most of the requested examples fall here.</span><span data-l="ja">本調査の中心となる部分です。ご提示いただいた例の多くがここに該当します。</span></p>
+  <ul class="facts" data-l="en">
+    <li><b>Opening the notification panel is not recorded at all.</b> Tapping the bell writes nothing to the database and emits no log line. How many users opened the panel, and how often, cannot be known — now or retroactively. "Open count / open rate" as described cannot be produced.</li>
+    <li><b>Click-through rate in the strict sense is unavailable.</b> It would be clicks ÷ panel opens, and that denominator does not exist. The rate reported above is a different and more useful one: users who opened a notification ÷ users who could have seen it.</li>
+    <li><b>Repeat opens are not recorded.</b> The receipt is written once and never updated, so a user who reads a notification ten times counts once, and the last-read time is unknown.</li>
+    <li><b>There is no delivery or impression record.</b> Nothing records that a notification was shown in a user's list, so "open rate" in the push-notification sense does not apply to this feature.</li>
+    <li><b>Tag filtering, scrolling and dismissals are not recorded.</b></li>
+    <li><b>A similarly named log exists but belongs to a different feature.</b> <code>[Notification Click Track]</code> in the production logs records clicks on <b>browser push notifications</b> (FCM), not the bell. It is also anonymous — that endpoint requires no login — so it carries no user id. It must not be read as bell data.</li>
+    <li><b>Google Analytics cannot fill the gap, even retroactively.</b> GA4 is installed site-wide, but the site sends no custom events at all, and the panel is an overlay rather than a page, so GA4 never recorded even a page view for it.</li>
+    <li><b>No archived log helps.</b> All 35 retained production log files were searched in full, including the compressed archives: <b>zero</b> notification entries. Log retention is about 14 days in any case.</li>
+    <li><b>The server access log cannot stand in for the missing panel-open count.</b> Estimating panel opens from requests to the notification list endpoint was considered and rejected: the access log carries <b>no user id</b> (logging runs before authentication), so it cannot be reduced to users; retention is only ~14 days, so it says nothing about the past; the collector double-counts by roughly 14%; and the list endpoint is paged by infinite scroll, so one panel open produces an unpredictable number of requests. A number derived this way would be wrong in an unknown direction, and is not reported.</li>
+  </ul>
+  <ul class="facts" data-l="ja">
+    <li><b>通知一覧を開く操作は一切記録されていません。</b>ベルをタップしてもDBにもログにも何も残りません。何人が何回一覧を開いたかは、現在も過去分も把握できません。ご要望の「開封数・開封率」は取得できません。</li>
+    <li><b>厳密な意味でのクリック率は算出できません。</b>本来はクリック数÷一覧の開封数ですが、分母が存在しません。上記の利用率はこれとは異なる、より実態に近い指標です：通知を開いたユーザー数 ÷ その通知を見られる状態だったユーザー数。</li>
+    <li><b>再読は記録されません。</b>既読レコードは初回のみ記録され更新されないため、同じ通知を10回読んでも1回として数えられ、最終閲覧日時も分かりません。</li>
+    <li><b>配信・表示の記録がありません。</b>通知が一覧に表示されたという記録は残らないため、プッシュ通知でいう「開封率」の概念はこの機能には適用できません。</li>
+    <li><b>タグによる絞り込み・スクロール・閉じる操作も記録されていません。</b></li>
+    <li><b>名称の似たログがありますが別機能のものです。</b>本番ログの <code>[Notification Click Track]</code> は<b>ブラウザのプッシュ通知（FCM）</b>のクリック記録であり、ベルアイコンのものではありません。また当該エンドポイントは認証不要のためユーザーIDも含まれません。ベルの利用データとして扱わないようご注意ください。</li>
+    <li><b>Google Analyticsでも補完できません（過去分も同様）。</b>GA4はサイト全体に導入されていますが、カスタムイベントを一切送信しておらず、通知一覧はページ遷移ではなくオーバーレイ表示のため、ページビューすら記録されていません。</li>
+    <li><b>保存済みログにも該当データはありません。</b>保管されている本番ログ35ファイルを圧縮分も含めて全文検索しましたが、通知関連の記録は<b>0件</b>でした。そもそもログの保持期間は約14日です。</li>
+    <li><b>サーバーのアクセスログで開封数を代替することもできません。</b>通知一覧APIへのリクエスト数から開封数を推定する方法も検討しましたが採用しませんでした。アクセスログには<b>ユーザーIDが含まれない</b>ため（ログ出力が認証処理より前に実行される仕様）ユーザー単位に集計できず、保持期間は約14日のため過去分は分からず、収集側の二重計上で約14%多く出て、さらに一覧APIは無限スクロールでページングされるため1回の開封で何回リクエストが発生するか特定できません。この方法の数値は誤差の方向すら分からないため記載しません。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span data-l="en">Notes for the dev team</span><span data-l="ja">開発チーム向けメモ</span></h2>
+  <ul class="facts" data-l="en">
+    <li><b>Verified absence, not an assumption.</b> The shared user-action tracking system has a registry of tracked actions kept in sync in two places, and neither contains any notification entry. The notification API handlers log only on error. None of the five notification UI components calls a tracking function. The analytics <code>events</code> table exists, but its only writer is search.</li>
+    <li><b>To make this measurable, reuse the analytics <code>events</code> table</b> rather than adding a new one. It was built for reuse, it already has its own Postgres box, and its <code>properties</code> JSONB column is the intended extension point and is currently unused. Suggested events: <code>announcement_panel_open</code>, <code>announcement_item_click</code> (notification id and tags in <code>properties</code>), <code>announcement_tag_filter</code>.</li>
+    <li><b>Do not solve this with a log line.</b> Adding a log statement would be quicker, but logs are kept only ~14 days, so the history would evaporate — the same problem flagged in the previous (検索履歴) report. Write events to the database.</li>
+    <li>This should be raised as its own ticket.</li>
+  </ul>
+  <ul class="facts" data-l="ja">
+    <li><b>推測ではなく確認済みの「存在しない」です。</b>共通のユーザー行動計測には計測対象アクションの一覧が2箇所に同期して定義されていますが、通知関連の項目はどちらにもありません。通知APIのハンドラはエラー時のみログを出力し、通知UIの5つのコンポーネントはいずれも計測関数を呼んでいません。analytics の <code>events</code> テーブルは存在しますが、書き込んでいるのは検索機能のみです。</li>
+    <li><b>計測可能にするには、新規テーブルではなく analytics の <code>events</code> テーブルを再利用してください。</b>同テーブルは再利用を前提に設計され、専用のPostgreSQLも既にあり、拡張用の <code>properties</code> JSONB カラムは未使用のままです。想定イベント：<code>announcement_panel_open</code>、<code>announcement_item_click</code>（<code>properties</code> に通知IDとタグを格納）、<code>announcement_tag_filter</code>。</li>
+    <li><b>ログ出力で済ませないでください。</b>ログ追加のほうが早いですが、保持期間が約14日のため履歴が消えます。前回（検索履歴）レポートで指摘したのと同じ問題です。DBにイベントを保存してください。</li>
+    <li>本件は別チケットとして起票すべき内容です。</li>
+  </ul>
+</section>
+
+<footer>
+  <span data-l="en">Search Array · notification history (通知履歴) usage investigation · ClickUp z94amcqmtt</span>
+  <span data-l="ja">サーチアレイ・通知履歴 利用状況調査・ClickUp z94amcqmtt</span>
+</footer>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Figures from scripts/db_stats.sql and scripts/db_denom.sql against production.
+// Everything is null until those queries have been run; each block below then
+// renders instead of its "pending" placeholder. This is the ONLY place to edit.
+// ---------------------------------------------------------------------------
+const DATA = {
+  opens: 8902,
+  users: 3903,
+  rate: "4.74%",
+  published: 7,
+  perItem: [["🎉 マイページ機能を追加しました！", 2541, 24061, 2469], ["ドラゴンボールスーパーダイバーズ 12弾 配列表販売", 2312, 24518, 2153], ["検索履歴機能のリニューアル", 1461, 25088, 1436], ["対配列表がもっと見やすくなりました!", 1259, 26059, 1234], ["おねがいアイプリ 4だん 配列表販売", 610, 26380, 592], ["アイカツ！アンコール 1弾 配列表販売", 542, 26932, 495], ["アーセナルベース WAVECHOES SEASON:05 配列表 好評販売中！", 177, 29520, 176]],
+  weekly: [["2026-08-31", 743], ["2026-09-07", 1864], ["2026-09-14", 2495], ["2026-09-21", 1341], ["2026-09-28", 965], ["2026-10-05", 700], ["2026-10-12", 388], ["2026-10-19", 406]],
+  hours: [290, 207, 124, 81, 57, 56, 157, 243, 286, 352, 443, 467, 530, 492, 490, 508, 457, 532, 596, 619, 560, 559, 469, 327],
+  weekday: [862, 768, 888, 1660, 1598, 1892, 1234],
+  byTag: [["新機能", 3, 5261, 3069], ["販売開始", 4, 3641, 2620], ["ダイバーズ", 1, 2312, 2312], ["アイプリ", 1, 610, 610], ["アイカツ!", 1, 542, 542], ["アーセナルベース", 1, 177, 177]],
+  lsReceipts: "347",
+  lsUsers: "285",
+  lsPct: "3.9%"
+};
+
+// Appendix figures from scripts/db_appendix.sql — the OTHER two notification channels.
+// Null until that query has been run. Filled by scripts/fill_appendix.py.
+const APPENDIX = {
+  push: {"sends": 20, "delivered": 52673, "undelivered": 31697, "devices": 3835, "items": [["2026-03-19", "", 1290, 957], ["2026-04-01", "", 1708, 1234], ["2026-04-19", "", 1866, 1579], ["2026-04-22", "", 1855, 1668], ["2026-04-23", "", 1906, 1705], ["2026-05-14", "", 2147, 2040], ["2026-05-15", "", 2116, 2106], ["2026-05-20", "", 2170, 2184], ["2026-05-25", "", 2284, 2334], ["2026-05-27", "", 2317, 2396], ["2026-06-03", "", 2529, 2564], ["2026-06-16", "", 2636, 2852], ["2026-06-17", "", 2636, 2927], ["2026-07-22", "", 3096, 2375], ["2026-08-16", "", 3487, 784], ["2026-08-20", "", 3467, 206], ["2026-09-10", "", 3674, 491], ["2026-09-16", "", 3749, 229], ["2026-10-08", "", 3932, 727], ["2026-10-22", "", 3808, 339]]},
+  email: {"sent": 9475, "opened": 4965, "failed": 0, "campaigns": 4, "items": [["2026-09-16", "【サーチアレイ】ダイバーズ12弾は明日稼働。配列表は販売中です！", 5867, 3128], ["2026-09-20", "【サーチアレイ】アイドルマスターツアーズS1弾Exの配列表を販売中です！", 799, 515], ["2026-10-01", "【サーチアレイ】おねがいアイプリ 4だん本日稼働！配列表を好評販売中です。", 584, 277], ["2026-10-22", "【サーチアレイ】アーセナルベース WAVECHOES SEASON:05 の配列表を好評販売中です【※ハログラムの位置も掲載※】", 2225, 1045]]}
+};
+
+const ja = () => document.documentElement.lang === "ja";
+const PENDING = {en: "Pending the production query run.", ja: "本番クエリの実行待ちです。"};
+
+function pending(id) {
+  const d = document.createElement("div");
+  d.className = "pending";
+  d.textContent = ja() ? PENDING.ja : PENDING.en;
+  document.getElementById(id).replaceChildren(d);
+}
+
+function el(tag, attrs, kids) {
+  const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  (kids || []).forEach(c => n.append(c));
+  return n;
+}
+
+function bars(id, labels, values, opt) {
+  opt = opt || {};
+  const W = opt.w || 900, H = opt.h || 260, pl = 40, pr = 10, pt = 10, pb = 28;
+  const max = Math.max(1, ...values);
+  const gw = (W - pl - pr) / values.length;
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img"});
+  values.forEach((v, i) => {
+    const h = (H - pt - pb) * (v / max);
+    const x = pl + i * gw;
+    svg.append(el("rect", {
+      x: x + gw * 0.15, y: H - pb - h, width: gw * 0.7, height: Math.max(h, v > 0 ? 1 : 0),
+      fill: opt.color ? opt.color(i) : "var(--accent)", rx: 2
+    }));
+    const every = opt.labelEvery || 1;
+    if (i % every === 0) {
+      const t = el("text", {x: x + gw / 2, y: H - pb + 16, "text-anchor": "middle"});
+      t.textContent = labels[i];
+      svg.append(t);
+    }
+  });
+  const top = el("text", {x: 4, y: pt + 10});
+  top.textContent = max;
+  svg.append(top);
+  document.getElementById(id).replaceChildren(svg);
+}
+
+function table(id, head, rows, textCols) {
+  // Every column but the first is numeric and right-aligned, unless named in textCols —
+  // the appendix tables carry a title/subject in the middle of the numbers.
+  const isText = i => i === 0 || (textCols || []).indexOf(i) >= 0;
+  const t = document.createElement("table");
+  const tr = document.createElement("tr");
+  head.forEach((h, i) => {
+    const th = document.createElement("th");
+    if (!isText(i)) th.className = "n";
+    th.textContent = h;
+    tr.append(th);
+  });
+  t.append(tr);
+  rows.forEach(r => {
+    const row = document.createElement("tr");
+    r.forEach((c, i) => {
+      const td = document.createElement("td");
+      if (!isText(i)) td.className = "n";
+      td.textContent = c;
+      row.append(td);
+    });
+    t.append(row);
+  });
+  document.getElementById(id).replaceChildren(t);
+}
+
+function render() {
+  // Figures quoted inside prose; left as written in the HTML when DATA has not been filled yet.
+  document.querySelectorAll("[data-fill]").forEach(e => {
+    const v = DATA[e.dataset.fill];
+    if (v !== null && v !== undefined) e.textContent = v;
+  });
+
+  document.querySelectorAll(".kpi b[data-k]").forEach(b => {
+    const v = DATA[b.dataset.k];
+    b.textContent = v === null ? "—" : v;
+    b.classList.toggle("none", v === null);
+  });
+
+  if (DATA.perItem) {
+    // The rate divides opensEligible by eligible, never the full opens column: users who joined
+    // after publication still see the notification (already-read) and can open it, but they are
+    // not in the eligible audience.
+    table("perItem",
+      ja() ? ["通知", "開封数", "うち対象者", "対象者", "開封率"]
+           : ["Notification", "Opens", "By eligible", "Eligible", "Rate"],
+      DATA.perItem.map(([title, opens, elig, oe]) =>
+        [title, opens, oe, elig, elig ? (100 * oe / elig).toFixed(2) + "%" : "—"]));
+  } else pending("perItem");
+
+  if (DATA.weekly) {
+    bars("weekly", DATA.weekly.map(([d]) => d.slice(5).replace("-", "/")), DATA.weekly.map(r => r[1]));
+  } else pending("weekly");
+
+  if (DATA.hours) {
+    bars("hours", DATA.hours.map((_, h) => String(h)), DATA.hours, {w: 440, h: 220, labelEvery: 3});
+  } else pending("hours");
+
+  if (DATA.weekday) {
+    const days = ja() ? ["月", "火", "水", "木", "金", "土", "日"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    bars("weekday", days, DATA.weekday, {w: 440, h: 220, color: i => i >= 5 ? "var(--accent2)" : "var(--accent)"});
+  } else pending("weekday");
+
+  if (DATA.byTag) {
+    table("byTag",
+      ja() ? ["種類（タグ）", "通知数", "開封数", "ユーザー数"] : ["Type (tag)", "Notifications", "Opens", "Users"],
+      DATA.byTag);
+  } else pending("byTag");
+
+  if (APPENDIX.push) {
+    const p = APPENDIX.push;
+    const rows = p.items.map(([on, title, ok, bad]) =>
+      [on, title || "—", ok, bad, (ok + bad) ? (100 * ok / (ok + bad)).toFixed(1) + "%" : "—"]);
+    rows.push([ja() ? "合計" : "Total",
+      ja() ? `送信 ${p.sends} 回・登録端末 ${p.devices}` : `${p.sends} sends · ${p.devices} devices registered`,
+      p.delivered, p.undelivered,
+      (p.delivered + p.undelivered) ? (100 * p.delivered / (p.delivered + p.undelivered)).toFixed(1) + "%" : "—"]);
+    table("appPush",
+      ja() ? ["送信日", "件名", "配信成功", "配信失敗", "配信率"] : ["Sent", "Title", "Delivered", "Failed", "Delivery"],
+      rows, [1]);
+  } else pending("appPush");
+
+  if (APPENDIX.email) {
+    const e = APPENDIX.email;
+    const rows = e.items.map(([on, subj, sent, opened]) =>
+      [on, subj || "—", sent, opened, sent ? (100 * opened / sent).toFixed(1) + "%" : "—"]);
+    rows.push([ja() ? "合計" : "Total",
+      ja() ? `${e.campaigns} 回の配信` : `${e.campaigns} campaigns`,
+      e.sent, e.opened, e.sent ? (100 * e.opened / e.sent).toFixed(1) + "%" : "—"]);
+    table("appEmail",
+      ja() ? ["送信日", "件名", "送信数", "開封数", "開封率"] : ["Sent", "Subject", "Sent", "Opened", "Open rate"],
+      rows, [1]);
+  } else pending("appEmail");
+}
+
+function setLang(l) {
+  document.documentElement.lang = l;
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.set === l)));
+  try { localStorage.setItem("lang", l); } catch (e) {}
+  render();
+}
+document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => setLang(b.dataset.set)));
+let initial = "en";
+try { initial = localStorage.getItem("lang") || (navigator.language.startsWith("ja") ? "ja" : "en"); } catch (e) {}
+setLang(initial);
+</script>
+</body>
+</html>
