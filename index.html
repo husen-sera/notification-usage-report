@@ -193,6 +193,27 @@ th.n{white-space:nowrap}
 </section>
 
 <section>
+  <h2><span data-l="en">Suggestion — record usage as part of every feature</span><span data-l="ja">ご提案：機能ごとに利用状況を記録する</span></h2>
+  <p class="note"><span data-l="en">So that the next "how much is this used?" question can be answered with numbers instead of a new investigation.</span><span data-l="ja">次に「この機能はどれくらい使われているか」というご質問をいただいた際に、新たな調査ではなく数値ですぐにお答えできるようにするためのご提案です。</span></p>
+  <ul class="facts" data-l="en">
+    <li><b>Why.</b> Usage has now been asked about twice — 検索履歴, and now the notification bell — and both times the answer was "not recorded, and past data cannot be recovered". Usage data only exists from the day recording starts, so every week without it is data that can never be produced later.</li>
+    <li><b>1. Start recording the bell now.</b> Record three things: the bell opened, a notification opened, and a tag filter used. Within about a month there would be real open counts and open rates, per user and by period.</li>
+    <li><b>2. Make usage recording part of every new feature.</b> Add one line to the ticket template — 「利用状況の記録：どの操作を記録するか」 — decided by the PM with the client when the ticket is written, and checked by QA like any other requirement. A feature then ships with its usage data from day one.</li>
+    <li><b>3. Keep it in the database, not in logs.</b> Logs are deleted after about 2 weeks, which is exactly why neither earlier question could be answered for the past.</li>
+    <li><b>4. Optional: a usage summary screen in the admin.</b> Counts per feature by day, week and month, so usage can be checked at any time without asking.</li>
+    <li><b>Effort.</b> Recording the bell is a small change: the database table for this already exists (search uses it) and is designed to be reused. The ticket template change needs no development.</li>
+  </ul>
+  <ul class="facts" data-l="ja">
+    <li><b>背景。</b>機能の利用状況についてのご質問はこれで2回目です（検索履歴、今回の通知ベル）。いずれも「記録されておらず、過去分は取得できない」という回答になりました。利用データは記録を始めた日からしか存在しないため、記録していない期間のデータは後から作ることができません。</li>
+    <li><b>1. 通知ベルの記録を今すぐ始める。</b>「ベルを開いた」「通知を開いた」「タグで絞り込んだ」の3つを記録します。約1か月後には、ユーザー別・期間別の開封数・開封率を実データでお出しできます。</li>
+    <li><b>2. 新機能には利用状況の記録を必ず含める。</b>チケットのテンプレートに「利用状況の記録：どの操作を記録するか」の1行を追加し、チケット作成時にPMとクライアントで決め、QAが他の要件と同様に確認します。これにより、機能はリリース初日から利用データ付きで提供されます。</li>
+    <li><b>3. ログではなくデータベースに保存する。</b>ログは約2週間で削除されます。今回と前回のご質問で過去分にお答えできなかったのはこのためです。</li>
+    <li><b>4. （任意）管理画面に利用状況の集計画面を設ける。</b>機能ごとの日別・週別・月別の件数を表示し、ご質問いただかなくてもいつでも確認できるようにします。</li>
+    <li><b>工数。</b>通知ベルの記録は小規模な変更です。記録用のデータベースのテーブルは既に存在し（検索機能で使用中）、再利用を前提に設計されています。テンプレートの変更に開発作業は不要です。</li>
+  </ul>
+</section>
+
+<section>
   <h2><span data-l="en">Notes for the dev team</span><span data-l="ja">開発チーム向けメモ</span></h2>
   <ul class="facts" data-l="en">
     <li><b>Verified absence, not an assumption.</b> The shared user-action tracking system has a registry of tracked actions kept in sync in two places, and neither contains any notification entry. The notification API handlers log only on error. None of the five notification UI components calls a tracking function. The analytics <code>events</code> table exists, but its only writer is search.</li>
