@@ -74,7 +74,7 @@ th.n{white-space:nowrap}
 <header>
   <div>
     <h1><span data-l="en">Notification history usage report</span><span data-l="ja">「通知履歴」機能 利用状況レポート</span></h1>
-    <p class="sub"><span data-l="en">Search Array · production · as of 2026-10-23</span><span data-l="ja">サーチアレイ・本番環境・2026-10-23 時点</span></p>
+    <p class="sub"><span data-l="en">Search Array · production · as of 2026-10-23 · corrected 2026-10-30</span><span data-l="ja">サーチアレイ・本番環境・2026-10-23 時点（2026-10-30 訂正）</span></p>
   </div>
   <div class="lang" role="group" aria-label="Language">
     <button type="button" data-set="en" aria-pressed="true">EN</button>
@@ -83,8 +83,8 @@ th.n{white-space:nowrap}
 </header>
 
 <div class="verdict">
-  <span data-l="en"><b>There is no usage logging for the notification bell.</b> Nothing is recorded when a user opens the notification panel, so open counts and open rates cannot be produced for any period, past or present. What <i>is</i> recorded — in the database, not in logs — is one row per user per notification at the moment they open it. That gives us click counts, click rates, usage over time and usage by notification type, for the whole life of the feature.</span>
-  <span data-l="ja"><b>通知ベルには利用ログが実装されていません。</b>ユーザーが通知一覧を開いても記録は一切残らないため、開封数・開封率は過去分を含め取得できません。一方で<i>データベース側</i>には、ユーザーが個別の通知を開いた時点で既読レコードが1件ずつ記録されています。これによりクリック数・クリック率・期間別および通知の種類別の利用状況を、機能リリース時点まで遡って集計できます。</span>
+  <span data-l="en"><b>There is no usage logging for the notification bell.</b> Opening the notification panel is not recorded as usage — no user, no database row, no click-log entry — so open counts and open rates cannot be produced for any period, past or present. What <i>is</i> recorded — in the database, not in logs — is one row per user per notification at the moment they open it. That gives us click counts, click rates, usage over time and usage by notification type, for the whole life of the feature.</span>
+  <span data-l="ja"><b>通知ベルには利用ログが実装されていません。</b>ユーザーが通知一覧を開いても、利用データとしては記録されません（ユーザー・DBレコード・クリックログのいずれも残りません）。そのため開封数・開封率は過去分を含め取得できません。一方で<i>データベース側</i>には、ユーザーが個別の通知を開いた時点で既読レコードが1件ずつ記録されています。これによりクリック数・クリック率・期間別および通知の種類別の利用状況を、機能リリース時点まで遡って集計できます。</span>
 </div>
 
 <div class="kpis">
@@ -167,22 +167,24 @@ th.n{white-space:nowrap}
   <h2><span data-l="en">Data that could not be collected</span><span data-l="ja">ログから取得できなかったデータ</span></h2>
   <p class="note"><span data-l="en">This is the substance of the investigation, and most of the requested examples fall here.</span><span data-l="ja">本調査の中心となる部分です。ご提示いただいた例の多くがここに該当します。</span></p>
   <ul class="facts" data-l="en">
-    <li><b>Opening the notification panel is not recorded at all.</b> Tapping the bell writes nothing to the database and emits no log line. How many users opened the panel, and how often, cannot be known — now or retroactively. "Open count / open rate" as described cannot be produced.</li>
+    <li><b>Opening the notification panel is not recorded as usage.</b> Tapping the bell writes nothing to the database and no usage-log entry. It only loads the notification list, which leaves an anonymous line in the server access log — no user, kept ~14 days (see the last point). How many users opened the panel, and how often, cannot be known — now or retroactively. "Open count / open rate" as described cannot be produced.</li>
     <li><b>Click-through rate in the strict sense is unavailable.</b> It would be clicks ÷ panel opens, and that denominator does not exist. The rate reported above is a different and more useful one: users who opened a notification ÷ users who could have seen it.</li>
     <li><b>Repeat opens are not recorded.</b> The receipt is written once and never updated, so a user who reads a notification ten times counts once, and the last-read time is unknown.</li>
     <li><b>There is no delivery or impression record.</b> Nothing records that a notification was shown in a user's list, so "open rate" in the push-notification sense does not apply to this feature.</li>
     <li><b>Tag filtering, scrolling and dismissals are not recorded.</b></li>
+    <li><b>None of the existing click logs covers the bell.</b> The <code>[game click]</code> log records only its own list of actions (配列, 検索, カードリスト and similar) and has no notification entry. The fake-click log records only taps on the 「詳細」 button. Checked against the code and by tapping the bell on 2026-10-30: neither fires.</li>
     <li><b>A similarly named log exists but belongs to a different feature.</b> <code>[Notification Click Track]</code> in the production logs records clicks on <b>browser push notifications</b> (FCM), not the bell. It is also anonymous — that endpoint requires no login — so it carries no user id. It must not be read as bell data.</li>
     <li><b>Google Analytics cannot fill the gap, even retroactively.</b> GA4 is installed site-wide, but the site sends no custom events at all, and the panel is an overlay rather than a page, so GA4 never recorded even a page view for it.</li>
     <li><b>No archived log helps.</b> All 35 retained production log files were searched in full, including the compressed archives: <b>zero</b> notification entries. Log retention is about 14 days in any case.</li>
     <li><b>The server access log cannot stand in for the missing panel-open count.</b> Estimating panel opens from requests to the notification list endpoint was considered and rejected: the access log carries <b>no user id</b> (logging runs before authentication), so it cannot be reduced to users; retention is only ~14 days, so it says nothing about the past; the collector double-counts by roughly 14%; and the list endpoint is paged by infinite scroll, so one panel open produces an unpredictable number of requests. A number derived this way would be wrong in an unknown direction, and is not reported.</li>
   </ul>
   <ul class="facts" data-l="ja">
-    <li><b>通知一覧を開く操作は一切記録されていません。</b>ベルをタップしてもDBにもログにも何も残りません。何人が何回一覧を開いたかは、現在も過去分も把握できません。ご要望の「開封数・開封率」は取得できません。</li>
+    <li><b>通知一覧を開く操作は、利用データとして記録されていません。</b>ベルをタップしてもDBにも利用ログにも何も残りません。一覧の読み込みに伴い、サーバーのアクセスログに匿名の1行（ユーザー不明・保持期間約14日）が残るのみです（最後の項目を参照）。何人が何回一覧を開いたかは、現在も過去分も把握できません。ご要望の「開封数・開封率」は取得できません。</li>
     <li><b>厳密な意味でのクリック率は算出できません。</b>本来はクリック数÷一覧の開封数ですが、分母が存在しません。上記の利用率はこれとは異なる、より実態に近い指標です：通知を開いたユーザー数 ÷ その通知を見られる状態だったユーザー数。</li>
     <li><b>再読は記録されません。</b>既読レコードは初回のみ記録され更新されないため、同じ通知を10回読んでも1回として数えられ、最終閲覧日時も分かりません。</li>
     <li><b>配信・表示の記録がありません。</b>通知が一覧に表示されたという記録は残らないため、プッシュ通知でいう「開封率」の概念はこの機能には適用できません。</li>
     <li><b>タグによる絞り込み・スクロール・閉じる操作も記録されていません。</b></li>
+    <li><b>既存のクリックログもベルには対応していません。</b><code>[game click]</code> ログは定義済みの操作（配列・検索・カードリストなど）のみを記録し、通知の項目はありません。フェイククリックのログは「詳細」ボタンのタップのみを記録します。コード確認と、2026-10-30 に実際にベルをタップして確認しました。いずれも記録されません。</li>
     <li><b>名称の似たログがありますが別機能のものです。</b>本番ログの <code>[Notification Click Track]</code> は<b>ブラウザのプッシュ通知（FCM）</b>のクリック記録であり、ベルアイコンのものではありません。また当該エンドポイントは認証不要のためユーザーIDも含まれません。ベルの利用データとして扱わないようご注意ください。</li>
     <li><b>Google Analyticsでも補完できません（過去分も同様）。</b>GA4はサイト全体に導入されていますが、カスタムイベントを一切送信しておらず、通知一覧はページ遷移ではなくオーバーレイ表示のため、ページビューすら記録されていません。</li>
     <li><b>保存済みログにも該当データはありません。</b>保管されている本番ログ35ファイルを圧縮分も含めて全文検索しましたが、通知関連の記録は<b>0件</b>でした。そもそもログの保持期間は約14日です。</li>
